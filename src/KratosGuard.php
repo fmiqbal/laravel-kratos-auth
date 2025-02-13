@@ -15,6 +15,7 @@ use Ory\Client\ApiException;
 use Ory\Client\Configuration;
 use Ory\Client\Model\Session;
 use RuntimeException;
+use Throwable;
 
 class KratosGuard implements Guard
 {
@@ -30,6 +31,11 @@ class KratosGuard implements Guard
     {
         $this->request = $request;
         $this->ory = $ory;
+    }
+
+    public function validate(array $credentials = []): bool
+    {
+        return ! is_null($this->user());
     }
 
     public function user(): ?Authenticatable
@@ -51,14 +57,13 @@ class KratosGuard implements Guard
             }
 
             return null;
+        } catch (Throwable $exception) {
+            Log::error($exception);
+
+            return null;
         }
 
         return $this->makeUser($session);
-    }
-
-    public function validate(array $credentials = []): bool
-    {
-        return ! is_null($this->user());
     }
 
     protected function makeUser(Session $session): Authenticatable
