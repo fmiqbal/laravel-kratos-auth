@@ -50,15 +50,11 @@ class KratosGuard implements Guard
             $session = $frontendApi->toSession(
                 cookie: $this->request->header('Cookie')
             );
-        } catch (ApiException $exception) {
-            // If not 401 Unauthorized, its probably something wrong with Kratos
-            if ($exception->getCode() !== 401) {
-                Log::error($exception);
-            }
-
-            return null;
         } catch (Throwable $exception) {
-            Log::error($exception);
+            // If not 401 Unauthorized, its probably something wrong with Kratos
+            if ($exception instanceof ApiException && $exception->getCode() !== 401) {
+                report($exception);
+            }
 
             return null;
         }
@@ -71,7 +67,7 @@ class KratosGuard implements Guard
         $scaffoldFunction = config('kratos.user_scaffold');
 
         if (! $scaffoldFunction instanceof Closure) {
-            throw new RuntimeException(new UserScaffoldIsNotClosure());
+            throw new UserScaffoldIsNotClosure();
         }
 
         return config('kratos.user_scaffold')($session);

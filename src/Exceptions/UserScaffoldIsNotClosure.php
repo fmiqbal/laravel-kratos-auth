@@ -2,7 +2,9 @@
 
 namespace Fmiqbal\KratosAuth\Exceptions;
 
-class UserScaffoldIsNotClosure extends \RuntimeException
+use RuntimeException;
+
+class UserScaffoldIsNotClosure extends RuntimeException
 {
 
 }
