@@ -26,11 +26,11 @@ class ServiceProvider extends LaravelServiceProvider
 
     protected function configureGuard()
     {
-        $ory = Ory\Client\Configuration::getDefaultConfiguration()
+        $ory = (new Ory\Client\Configuration())
             ->setHost(config('kratos.admin_url'))
             ->setDebug(config('kratos.debug'));
 
-        $this->app['auth']->extend('kratos', function (Application $app, string $name, array $config) use ($ory) {
+        $this->app['auth']->extend('kratos', function (Application $app) use ($ory) {
             $guard = new KratosGuard($app['request'], $ory);
 
             $app->refresh('request', $guard, 'setRequest');
