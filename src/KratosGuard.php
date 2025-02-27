@@ -9,7 +9,6 @@ use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Ory\Client\Api\FrontendApi;
 use Ory\Client\ApiException;
 use Ory\Client\Configuration;
@@ -44,7 +43,9 @@ class KratosGuard implements Guard
             return $this->user;
         }
 
-        $frontendApi = new FrontendApi(new GuzzleHttp\Client(), $this->ory);
+        $client = $this->getClient();
+
+        $frontendApi = new FrontendApi($client, $this->ory);
 
         try {
             $session = $frontendApi->toSession(
@@ -60,6 +61,24 @@ class KratosGuard implements Guard
         }
 
         return $this->makeUser($session);
+    }
+
+    /**
+     * @return GuzzleHttp\Client
+     */
+    public function getClient(): GuzzleHttp\Client
+    {
+        $client = config('kratos.guzzle_client');
+
+        if ($client instanceof Closure) {
+            $client = $client();
+        }
+
+        if (! $client instanceof GuzzleHttp\Client) {
+            throw new \InvalidArgumentException("config('guzzle_client') should be instance of GuzzleHttp\\Client");
+        }
+
+        return $client;
     }
 
     protected function makeUser(Session $session): Authenticatable

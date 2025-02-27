@@ -57,5 +57,5 @@ return [
         ]);
     },
 
-    ''
+    'guzzle_client' => new \GuzzleHttp\Client(),
 ];
