@@ -53,9 +53,17 @@ return [
     'user_scaffold' => static function (\Ory\Client\Model\Session $session) {
         return new \Illuminate\Auth\GenericUser([
             'id' => $session->getId(),
-            // 'name' => $session->getIdentity()['name'],
+            // 'name' => $session->getIdentity()?->getTraits()->name
         ]);
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | Guzzle Client
+    |--------------------------------------------------------------------------
+    |
+    | Guzzle Client used, if needed to inject other information such as tracing
+    |
+    */
     'guzzle_client' => new \GuzzleHttp\Client(),
 ];

@@ -9,11 +9,11 @@ use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use Ory\Client\Api\FrontendApi;
 use Ory\Client\ApiException;
 use Ory\Client\Configuration;
 use Ory\Client\Model\Session;
-use RuntimeException;
 use Throwable;
 
 class KratosGuard implements Guard
@@ -75,7 +75,7 @@ class KratosGuard implements Guard
         }
 
         if (! $client instanceof GuzzleHttp\Client) {
-            throw new \InvalidArgumentException("config('guzzle_client') should be instance of GuzzleHttp\\Client");
+            throw new InvalidArgumentException("config('guzzle_client') should be instance of GuzzleHttp\\Client");
         }
 
         return $client;
@@ -89,6 +89,6 @@ class KratosGuard implements Guard
             throw new UserScaffoldIsNotClosure();
         }
 
-        return config('kratos.user_scaffold')($session);
+        return $scaffoldFunction($session);
     }
 }
