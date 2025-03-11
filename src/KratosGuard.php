@@ -3,82 +3,89 @@
 namespace Fmiqbal\KratosAuth;
 
 use Closure;
+use Exception;
 use Fmiqbal\KratosAuth\Exceptions\UserScaffoldIsNotClosure;
-use GuzzleHttp;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
-use InvalidArgumentException;
+use Illuminate\Support\Facades\Cache;
 use Ory\Client\Api\FrontendApi;
 use Ory\Client\ApiException;
-use Ory\Client\Configuration;
 use Ory\Client\Model\Session;
-use Throwable;
 
 class KratosGuard implements Guard
 {
     use GuardHelpers;
 
-    protected Request $request;
-    protected Configuration $ory;
-
     public function __construct(
-        Request       $request,
-        Configuration $ory
+        protected Request     $request,
+        protected FrontendApi $frontendApi,
     )
     {
-        $this->request = $request;
-        $this->ory = $ory;
     }
 
+    /**
+     * @throws ApiException
+     * @throws AuthenticationException
+     */
     public function validate(array $credentials = []): bool
     {
         return ! is_null($this->user());
     }
 
+    /**
+     * @throws ApiException
+     * @throws AuthenticationException
+     */
     public function user(): ?Authenticatable
     {
         if (! is_null($this->user)) {
             return $this->user;
         }
 
-        $client = $this->getClient();
-
-        $frontendApi = new FrontendApi($client, $this->ory);
-
         try {
-            $session = $frontendApi->toSession(
-                cookie: $this->request->header('Cookie')
-            );
-        } catch (Throwable $exception) {
-            // If not 401 Unauthorized, its probably something wrong with Kratos
-            if ($exception instanceof ApiException && $exception->getCode() !== 401) {
-                report($exception);
+            $cookieName = config('kratos.session_cookie_name');
+
+            $session = $this->getSession($cookieName);
+        } catch (Exception $exception) {
+            if (in_array($exception->getCode(), [401, 403], true)) {
+                throw new AuthenticationException();
             }
 
-            return null;
+            throw $exception;
         }
 
-        return $this->makeUser($session);
+        $this->user = $this->makeUser($session);
+
+        return $this->user;
     }
 
     /**
-     * @return GuzzleHttp\Client
+     * @param mixed $cookieName
+     * @return Session
+     * @throws ApiException
+     * @throws AuthenticationException
      */
-    public function getClient(): GuzzleHttp\Client
+    protected function getSession(mixed $cookieName): Session
     {
-        $client = config('kratos.guzzle_client');
+        $cookie = $this->request->cookie($cookieName);
 
-        if ($client instanceof Closure) {
-            $client = $client();
+        if (empty($cookie)) {
+            throw new AuthenticationException();
         }
 
-        if (! $client instanceof GuzzleHttp\Client) {
-            throw new InvalidArgumentException("config('guzzle_client') should be instance of GuzzleHttp\\Client");
+        if (! config('kratos.cache.enabled')) {
+            return $this->frontendApi->toSession(cookie: sprintf("$cookieName=%s", $cookie));
         }
 
-        return $client;
+        $key = "kratos:cookie:" . hash_hmac('sha256', $cookie, config('app.key'));
+        $ttl = config('kratos.cache.ttl');
+
+        return Cache::remember($key, $ttl, fn() => $this->frontendApi->toSession(
+            cookie: sprintf("$cookieName=%s", $cookie)
+        ));
     }
 
     protected function makeUser(Session $session): Authenticatable
