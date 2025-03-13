@@ -28,21 +28,22 @@ test:
   image:
     name: harbor.unpad.dev/images/php:8.3-dev
     entrypoint: [""]
+  coverage: '/^\s*Total:\s*\d+\.\d+\s*%/'
   artifacts:
     when: on_success
     reports:
-      junit: report.xml
+      junit: junit.xml
       coverage_report:
         coverage_format: cobertura
-        path: coverage-cobertura.xml
+        path: cobertura.xml
     paths:
-      - report.xml
-      - coverage.xml
-      - coverage-cobertura.xml
-      - coverage-clover.xml
+      - junit.xml
+      - cobertura.xml
+      - clover.xml
   script:
     - composer install
     - composer test
+
 
 sonarqube:
   stage: test
