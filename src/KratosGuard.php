@@ -4,13 +4,13 @@ namespace Fmiqbal\KratosAuth;
 
 use Closure;
 use Exception;
-use Fmiqbal\KratosAuth\Exceptions\UserScaffoldIsNotClosure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use InvalidArgumentException;
 use Ory\Client\Api\FrontendApi;
 use Ory\Client\ApiException;
 use Ory\Client\Model\Session;
@@ -47,8 +47,15 @@ class KratosGuard implements Guard
 
         try {
             $cookieName = config('kratos.session_cookie_name');
+            $cookie = $this->request->cookie($cookieName);
 
-            $session = $this->getSession($cookieName);
+            if (empty($cookie)) {
+                throw new AuthenticationException();
+            }
+
+            $session = config('kratos.cache.enabled')
+                ? $this->getCachedSession($cookieName, $cookie)
+                : $this->getSession($cookieName, $cookie);
         } catch (Exception $exception) {
             if (in_array($exception->getCode(), [401, 403], true)) {
                 throw new AuthenticationException();
@@ -63,37 +70,27 @@ class KratosGuard implements Guard
     }
 
     /**
-     * @param mixed $cookieName
-     * @return Session
      * @throws ApiException
-     * @throws AuthenticationException
      */
-    protected function getSession(mixed $cookieName): Session
+    protected function getSession(string $cookieName, string $cookie): Session
     {
-        $cookie = $this->request->cookie($cookieName);
+        return $this->frontendApi->toSession(cookie: "$cookieName=$cookie");
+    }
 
-        if (empty($cookie)) {
-            throw new AuthenticationException();
-        }
-
-        if (! config('kratos.cache.enabled')) {
-            return $this->frontendApi->toSession(cookie: sprintf("$cookieName=%s", $cookie));
-        }
-
+    protected function getCachedSession(string $cookieName, string $cookie): Session
+    {
         $key = "kratos:cookie:" . hash_hmac('sha256', $cookie, config('app.key'));
         $ttl = config('kratos.cache.ttl');
 
-        return Cache::remember($key, $ttl, fn() => $this->frontendApi->toSession(
-            cookie: sprintf("$cookieName=%s", $cookie)
-        ));
+        return Cache::remember($key, $ttl, fn() => $this->getSession($cookieName, $cookie));
     }
 
-    protected function makeUser(Session $session): Authenticatable
+    protected function makeUser(Session $session): ?Authenticatable
     {
         $scaffoldFunction = config('kratos.user_scaffold');
 
         if (! $scaffoldFunction instanceof Closure) {
-            throw new UserScaffoldIsNotClosure();
+            throw new InvalidArgumentException('User scaffold is not a function');
         }
 
         return $scaffoldFunction($session);
