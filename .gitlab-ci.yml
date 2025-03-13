@@ -10,6 +10,38 @@ variables:
   SONAR_TOKEN: sqa_ed77e699d49bf90e0d9fc148d5700691a69abaa2
   BUILD_DISABLED: true
 
+test:
+  cache:
+    - key:
+        files:
+          - composer.lock
+      paths:
+        - vendor/
+  environment:
+    name: testing
+    action: prepare
+  variables:
+    XDEBUG_MODE: coverage
+    COMPOSER_ALLOW_SUPERUSER: 1
+  image:
+    name: harbor.unpad.dev/images/php:8.3-dev
+    entrypoint: [""]
+  artifacts:
+    when: on_success
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage-cobertura.xml
+    paths:
+      - report.xml
+      - coverage.xml
+      - coverage-cobertura.xml
+      - coverage-clover.xml
+  script:
+    - composer install
+    - composer test
+
 sonarqube:
   stage: test
   image: docker.harbor.unpad.dev/sonarsource/sonar-scanner-cli:11
