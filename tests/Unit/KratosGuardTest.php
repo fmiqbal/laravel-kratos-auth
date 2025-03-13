@@ -2,6 +2,7 @@
 
 namespace Unit;
 
+use Exception;
 use Fmiqbal\KratosAuth\KratosGuard;
 use GuzzleHttp;
 use GuzzleHttp\HandlerStack;
@@ -9,12 +10,15 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use JsonException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase;
 use Ory;
+use Ory\Client\ApiException;
 use Ory\Client\Model\Session;
 use PHPUnit\Framework\Attributes\Test;
 use Request;
+use Random;
 
 class KratosGuardTest extends TestCase
 {
@@ -32,7 +36,7 @@ class KratosGuardTest extends TestCase
 
     /**
      * @throws AuthenticationException
-     * @throws Ory\Client\ApiException
+     * @throws ApiException
      * @throws Random\RandomException
      * @throws JsonException
      */
