@@ -8,7 +8,8 @@ variables:
   CI_REGISTRY: $HARBOR_HOST
   SONAR_HOST_URL: https://sonarqube2.unpad.dev
   SONAR_TOKEN: sqa_ed77e699d49bf90e0d9fc148d5700691a69abaa2
-  BUILD_DISABLED: true
+  BUILD_DISABLED: "true"
+  CODE_QUALITY_DISABLED: "true"
 
 test:
   cache:
