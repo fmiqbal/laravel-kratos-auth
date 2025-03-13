@@ -45,6 +45,10 @@
         ],
         "lint": [
             "@php vendor/bin/phpstan analyse --verbose --ansi"
+        ],
+        "test": [
+            "@clear",
+            "@php /vendor/bin/phpunit --coverage-text=coverage.xml  --coverage-cobertura=coverage-cobertura.xml --log-junit=report.xml --coverage-clover=coverage-clover.xml"
         ]
     },
     "autoload-dev": {

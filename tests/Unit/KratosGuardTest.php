@@ -1,14 +1,20 @@
 <?php
 
+namespace Unit;
+
 use Fmiqbal\KratosAuth\KratosGuard;
+use GuzzleHttp;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase;
+use Ory;
 use Ory\Client\Model\Session;
 use PHPUnit\Framework\Attributes\Test;
+use Request;
 
 class KratosGuardTest extends TestCase
 {

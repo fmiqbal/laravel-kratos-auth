@@ -1,8 +1,13 @@
 <?php
 
+namespace Unit;
+
 use Fmiqbal\KratosAuth\KratosGuard;
+use GuzzleHttp;
+use InvalidArgumentException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase;
+use Ory;
 use PHPUnit\Framework\Attributes\Test;
 
 class ServiceProviderTest extends TestCase

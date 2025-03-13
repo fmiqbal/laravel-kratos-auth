@@ -1,0 +1,44 @@
+include:
+  - template: Auto-DevOps.gitlab-ci.yml
+
+variables:
+  CI_REGISTRY_IMAGE: $HARBOR_HOST/$HARBOR_PROJECT/$CI_PROJECT_ID-$CI_PROJECT_NAME
+  CI_REGISTRY_USER: $HARBOR_USERNAME
+  CI_REGISTRY_PASSWORD: $HARBOR_PASSWORD
+  CI_REGISTRY: $HARBOR_HOST
+  SONAR_HOST_URL: https://sonarqube2.unpad.dev
+  SONAR_TOKEN: sqa_ed77e699d49bf90e0d9fc148d5700691a69abaa2
+  BUILD_DISABLED: true
+
+sonarqube:
+  stage: test
+  image: docker.harbor.unpad.dev/sonarsource/sonar-scanner-cli:11
+  variables:
+    GIT_DEPTH: 0
+    GIT_STRATEGY: clone
+  needs:
+    - "test"
+  script:
+    - touch sonar-project.properties
+    - |
+      cat <<EOF >> sonar-project.properties
+      sonar.projectKey=$PROJECT_KEY
+      sonar.qualitygate.wait=true
+      EOF
+    - echo -e "$SONAR_PROPERTIES" >> sonar-project.properties
+    - cat sonar-project.properties
+    - sonar-scanner
+  rules:
+    - if: $SONARQUBE_DISABLED == "true"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        PROJECT_KEY: $CI_PROJECT_ID-$CI_PROJECT_NAME
+        SONAR_PROPERTIES: |-
+          sonar.pullrequest.key=$CI_MERGE_REQUEST_IID
+          sonar.pullrequest.branch=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+          sonar.pullrequest.base=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - if: $CI_COMMIT_BRANCH
+      variables:
+        PROJECT_KEY: $CI_PROJECT_ID-$CI_PROJECT_NAME
+
