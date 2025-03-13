@@ -10,6 +10,7 @@ variables:
   SONAR_TOKEN: sqa_ed77e699d49bf90e0d9fc148d5700691a69abaa2
   BUILD_DISABLED: "true"
   CODE_QUALITY_DISABLED: "true"
+  CONTAINER_SCANNING_DISABLED: "true"
 
 test:
   cache:
