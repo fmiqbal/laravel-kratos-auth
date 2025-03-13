@@ -28,24 +28,10 @@ class ServiceProvider extends LaravelServiceProvider
         $this->configureGuard();
     }
 
-    protected function configureOry(): void
-    {
-        $config = (new Ory\Client\Configuration())
-            ->setHost(config('kratos.url'))
-            ->setDebug(config('kratos.debug'));
-
-        $this->app->singleton(Ory\Client\Api\FrontendApi::class, function () use ($config) {
-            return new Ory\Client\Api\FrontendApi(
-                $this->getClient(),
-                $config
-            );
-        });
-    }
-
     protected function configureGuard(): void
     {
         $this->app['auth']->extend('kratos', function (Application $app) {
-            $frontendApi = $app->make(Ory\Client\Api\FrontendApi::class);
+            $frontendApi = $app->make('fmiqbal.kratos_auth.frontendapi');
 
             $guard = new KratosGuard($app['request'], $frontendApi);
 
@@ -55,22 +41,31 @@ class ServiceProvider extends LaravelServiceProvider
         });
     }
 
-    /**
-     * @return GuzzleHttp\Client
-     */
-    protected function getClient(): GuzzleHttp\Client
+    protected function configureOry()
     {
-        $client = config('kratos.guzzle_client');
+        $this->app->bind('fmiqbal.kratos_auth.guzzle_client', function () {
+            $client = config('kratos.guzzle_client');
 
-        if ($client instanceof Closure) {
-            $client = $client();
-        }
+            if ($client instanceof Closure) {
+                $client = $client();
+            }
 
-        if (! $client instanceof GuzzleHttp\Client) {
-            throw new InvalidArgumentException("config('kratos.guzzle-client') should be instance of GuzzleHttp\\Client");
-        }
+            if (! $client instanceof GuzzleHttp\Client) {
+                throw new InvalidArgumentException("config('kratos.guzzle-client') should be instance of GuzzleHttp\\Client");
+            }
 
-        return $client;
+            return $client;
+        });
+
+        $this->app->bind('fmiqbal.kratos_auth.frontendapi', function (Application $app) {
+            $config = (new Ory\Client\Configuration())
+                ->setHost(config('kratos.url'))
+                ->setDebug(config('kratos.debug'));
+
+            return new Ory\Client\Api\FrontendApi(
+                $app->make('fmiqbal.kratos_auth.guzzle_client'),
+                $config
+            );
+        });
     }
-
 }

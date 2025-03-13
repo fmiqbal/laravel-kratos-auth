@@ -46,5 +46,12 @@
         "lint": [
             "@php vendor/bin/phpstan analyse --verbose --ansi"
         ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
     }
 }
