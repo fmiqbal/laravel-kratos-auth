@@ -1,0 +1,82 @@
+{
+    "id": "a2c51f68-3d4b-4b45-8a9f-d5b8e6c17f94",
+    "active": true,
+    "expires_at": "2025-04-10T14:45:22.125863Z",
+    "authenticated_at": "2025-04-09T14:45:22.125863Z",
+    "authenticator_assurance_level": "aal2",
+    "authentication_methods": [
+        {
+            "method": "password",
+            "aal": "aal1",
+            "completed_at": "2025-04-09T14:45:18.892743Z",
+            "provider": "internal"
+        },
+        {
+            "method": "webauthn",
+            "aal": "aal2",
+            "completed_at": "2025-04-09T14:45:22.125850Z"
+        }
+    ],
+    "issued_at": "2025-04-09T14:45:18.892760Z",
+    "identity": {
+        "id": "b62f3e09-89d4-4a3c-a2fd-19dc5e7b97f8",
+        "schema_id": "d84c6f1a-b1e3-4b57-8cb9-f87238ebc2d5",
+        "schema_url": "https://accounts.unpad.dev/schemas/ZDg0YzZmMWEtYjFlMy00YjU3LThjYjktZjg3MjM4ZWJjMmQ1",
+        "state": "active",
+        "state_changed_at": "2025-04-08T09:12:33.987654Z",
+        "traits": {
+            "birthdate": "1995-11-15",
+            "email": "dimas@unpad.ac.id",
+            "family_name": "DIMAS",
+            "gender": "male",
+            "given_name": "PRATAMA",
+            "https://paus.unpad.ac.id/claims/groups": [
+                "faculty",
+                "researcher"
+            ],
+            "https://paus.unpad.ac.id/claims/id_card": "3210021511950002",
+            "https://paus.unpad.ac.id/claims/nip": "19951115202012001",
+            "https://paus.unpad.ac.id/claims/npm": [
+                "140810170042"
+            ],
+            "https://paus.unpad.ac.id/claims/paus_id": "2020205115002",
+            "name": "PRATAMA DIMAS RAHMAN",
+            "nickname": "dimas",
+            "phone_number": "081298765432",
+            "picture": "https://paus.unpad.ac.id/media/users/d/i/m/dimas/profile_20250409144522_89a732bf2e7a.jpg"
+        },
+        "verifiable_addresses": [
+            {
+                "id": "dc67f3d2-5c9b-487e-a6f1-36a248af2bd8",
+                "value": "dimas@unpad.ac.id",
+                "verified": true,
+                "via": "email",
+                "status": "completed",
+                "verified_at": "2025-04-08T09:12:34Z",
+                "created_at": "2025-04-08T09:12:34.125789Z",
+                "updated_at": "2025-04-08T09:12:34.125789Z"
+            }
+        ],
+        "recovery_addresses": [
+            {
+                "id": "b14c2ed9-4f32-4d89-b8a2-5691b8fc3b29",
+                "value": "dimas@unpad.ac.id",
+                "via": "email",
+                "created_at": "2025-04-08T09:12:34.225789Z",
+                "updated_at": "2025-04-08T09:12:34.225789Z"
+            }
+        ],
+        "metadata_public": null,
+        "created_at": "2025-04-08T09:12:34.125430Z",
+        "updated_at": "2025-04-09T13:22:47.993201Z",
+        "organization_id": null
+    },
+    "devices": [
+        {
+            "id": "eb7c92da-9f52-4713-b6c7-ef54a5dbf6df",
+            "ip_address": "10.6.1.201",
+            "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+            "location": "Bandung, Indonesia"
+        }
+    ]
+}
