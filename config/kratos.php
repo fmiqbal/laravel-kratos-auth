@@ -56,7 +56,7 @@ return [
     */
     'user_scaffold' => static function (\Ory\Client\Model\Session $session) {
         return new \Illuminate\Auth\GenericUser([
-            'id' => $session->getId(),
+            'id' => $session->getIdentity()?->getId(),
             // 'name' => $session->getIdentity()?->getTraits()->name
         ]);
     },
