@@ -51,7 +51,7 @@ class ServiceProvider extends LaravelServiceProvider
             }
 
             if (! $client instanceof GuzzleHttp\Client) {
-                throw new InvalidArgumentException("config('kratos.guzzle-client') should be instance of GuzzleHttp\\Client");
+                throw new InvalidArgumentException("config('kratos.guzzle_client') should be instance of GuzzleHttp\\Client");
             }
 
             return $client;
