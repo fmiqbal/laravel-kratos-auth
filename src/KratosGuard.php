@@ -14,6 +14,7 @@ use InvalidArgumentException;
 use Ory\Client\Api\FrontendApi;
 use Ory\Client\ApiException;
 use Ory\Client\Model\Session;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KratosGuard implements Guard
 {
@@ -71,6 +72,42 @@ class KratosGuard implements Guard
 
     /**
      * @throws ApiException
+     * @throws AuthenticationException
+     */
+    public function logout(): void
+    {
+        $cookieName = config('kratos.session_cookie_name');
+        $cookie = $this->request->cookie($cookieName);
+
+        $frontendApi = $this->frontendApi;
+
+        try {
+            $logoutFlow = $frontendApi->createBrowserLogoutFlow(
+                cookie: "$cookieName=$cookie",
+                returnTo: config('kratos.logout_return_to'),
+            );
+        } catch (ApiException $exception) {
+            if (in_array($exception->getCode(), [401, 403], true)) {
+                throw new AuthenticationException();
+            }
+
+            throw $exception;
+        }
+
+        if (config('kratos.cache.enabled')) {
+            Cache::forget($this->getCacheKey($cookie));
+        }
+
+        throw new HttpException(302, "Redirecting...", null, ['Location' => $logoutFlow->getLogoutUrl()]);
+    }
+
+    protected function getCacheKey(string $cookie): string
+    {
+        return "kratos:cookie:" . hash_hmac('sha256', $cookie, config('app.key'));
+    }
+
+    /**
+     * @throws ApiException
      */
     protected function getSession(string $cookieName, string $cookie): Session
     {
@@ -79,7 +116,7 @@ class KratosGuard implements Guard
 
     protected function getCachedSession(string $cookieName, string $cookie): Session
     {
-        $key = "kratos:cookie:" . hash_hmac('sha256', $cookie, config('app.key'));
+        $key = $this->getCacheKey($cookie);
         $ttl = config('kratos.cache.ttl');
 
         return Cache::remember($key, $ttl, fn() => $this->getSession($cookieName, $cookie));

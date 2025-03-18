@@ -48,6 +48,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Logout Return To
+    |--------------------------------------------------------------------------
+    |
+    | This will be your `return_to` on CreateBrowserLogoutFlow, make sure to
+    | add the logout url to allowed url on your Ory Kratos
+    |
+    */
+    'logout_return_to' => env('KRATOS_LOGOUT_RETURN_TO'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Scaffold user on valid session
     |--------------------------------------------------------------------------
     |
