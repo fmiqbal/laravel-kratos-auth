@@ -1,6 +1,6 @@
 <?php
 
-namespace Unit;
+namespace Tests\Unit;
 
 use Fmiqbal\KratosAuth\KratosGuard;
 use GuzzleHttp;

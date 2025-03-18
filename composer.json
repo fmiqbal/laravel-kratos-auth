@@ -20,7 +20,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Fmiqbal\\KratosAuth\\": "src/"
+            "Fmiqbal\\KratosAuth\\": "src/",
+            "Tests\\": "tests/"
         }
     },
     "extra": {

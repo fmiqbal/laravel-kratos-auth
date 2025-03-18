@@ -1,18 +1,20 @@
 <?php
 
-namespace Unit;
+namespace Tests\Unit;
 
+use Closure;
 use Exception;
 use Fmiqbal\KratosAuth\Exceptions\RedirectUsingException;
 use Fmiqbal\KratosAuth\KratosGuard;
 use GuzzleHttp;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use JsonException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase;
 use Ory;
@@ -27,7 +29,6 @@ class KratosGuardTest extends TestCase
     use WithWorkbench;
 
     protected $enablesPackageDiscoveries = true;
-    private KratosGuard $guard;
 
     public function setUp(): void
     {
@@ -38,9 +39,7 @@ class KratosGuardTest extends TestCase
 
     /**
      * @throws AuthenticationException
-     * @throws ApiException
      * @throws Random\RandomException
-     * @throws JsonException
      */
     #[Test] public function valid_session_should_create_user(): void
     {
@@ -49,7 +48,7 @@ class KratosGuardTest extends TestCase
         $session = $this->getSession();
         $session->getIdentity()->setId($newId->toString());
         $this->setGuzzleResponse(
-            new GuzzleHttp\Psr7\Response(body: json_encode($session->jsonSerialize(), JSON_THROW_ON_ERROR))
+            new GuzzleHttp\Psr7\Response(body: json_encode($session->jsonSerialize()))
         );
 
         $guard = $this->getGuard();
@@ -68,15 +67,23 @@ class KratosGuardTest extends TestCase
         }
     }
 
-    /**
-     * @throws JsonException
-     */
+    #[Test] public function non_auth_error_from_ory_should_be_reported()
+    {
+        $this->setGuzzleResponse(
+            new GuzzleHttp\Psr7\Response(status: 500)
+        );
+
+        $this->assertReportCalled(fn($e) => $e instanceof ApiException);
+
+        $this->getGuard()->user();
+    }
+
     #[Test] public function user_scaffold_should_be_a_closure(): void
     {
         config()->set('kratos.user_scaffold', '');
 
         $this->setGuzzleResponse(
-            new GuzzleHttp\Psr7\Response(body: json_encode($this->getSession()->jsonSerialize(), JSON_THROW_ON_ERROR))
+            new GuzzleHttp\Psr7\Response(body: json_encode($this->getSession()->jsonSerialize()))
         );
 
         $this->assertThrows(fn() => $this->getGuard()->user(), InvalidArgumentException::class);
@@ -91,10 +98,7 @@ class KratosGuardTest extends TestCase
         );
 
         $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(403));
-        $this->assertThrows(
-            fn() => $this->getGuard()->user(),
-            AuthenticationException::class
-        );
+        $this->assertThrows(fn() => $this->getGuard()->user(), AuthenticationException::class);
     }
 
     #[Test] public function empty_cookies_should_throw_authentication_exception(): void
@@ -111,9 +115,7 @@ class KratosGuardTest extends TestCase
 
     /**
      * @throws Random\RandomException
-     * @throws Ory\Client\ApiException
      * @throws AuthenticationException
-     * @throws JsonException
      */
     #[Test] public function cache_is_called_if_cache_enabled(): void
     {
@@ -121,15 +123,35 @@ class KratosGuardTest extends TestCase
 
         $session = $this->getSession();
         $this->setGuzzleResponse(
-            new GuzzleHttp\Psr7\Response(body: json_encode($session->jsonSerialize(), JSON_THROW_ON_ERROR))
+            new GuzzleHttp\Psr7\Response(body: json_encode($session->jsonSerialize()))
         );
-        $guard = $this->getGuard();
 
         Cache::shouldReceive('remember')
             ->once()
             ->andReturn($session);
 
-        $guard->user();
+        $this->getGuard()->user();
+    }
+
+    /**
+     * @throws Random\RandomException
+     * @throws AuthenticationException
+     */
+    #[Test] public function cache_is_bypassed_if_it_error(): void
+    {
+        config()->set('kratos.cache.enabled', true);
+        config()->set('cache.default', 'database');
+        config()->set('database.default', 'sqlite');
+        config()->set('database.connections.sqlite.database', '/dev/null');
+
+        $session = $this->getSession();
+        $this->setGuzzleResponse(
+            new GuzzleHttp\Psr7\Response(body: json_encode($session->jsonSerialize()))
+        );
+
+        $this->assertReportCalled(fn($e) => $e instanceof QueryException);
+
+        $this->getGuard()->user();
     }
 
     #[Test] public function logout_success_will_forget_cache(): void
@@ -144,10 +166,21 @@ class KratosGuardTest extends TestCase
         $this->assertThrows(fn() => $this->getGuard()->logout(), RedirectUsingException::class);
     }
 
-    /**
-     * @throws JsonException
-     * @throws Random\RandomException
-     */
+    #[Test] public function logout_cache_error_should_be_reported(): void
+    {
+        // Enable cache but make it invalid
+        config()->set('kratos.cache.enabled', true);
+        config()->set('cache.default', 'database');
+        config()->set('database.default', 'sqlite');
+        config()->set('database.connections.sqlite.database', '/dev/null');
+
+        $this->assertReportCalled(fn($e) => $e instanceof QueryException);
+
+        $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(body: json_encode([])));
+
+        $this->assertThrows(fn() => $this->getGuard()->logout(), RedirectUsingException::class);
+    }
+
     #[Test] public function logout_success(): void
     {
         $logoutToken = Str::random(40);
@@ -155,30 +188,38 @@ class KratosGuardTest extends TestCase
             new GuzzleHttp\Psr7\Response(body: json_encode([
                 'logout_token' => $logoutToken,
                 'logout_url' => "https://localhost:80001/logout?return_to=$logoutToken",
-            ], JSON_THROW_ON_ERROR))
+            ]))
         );
 
-        $guard = $this->getGuard();
-
-        $this->assertThrows(fn() => $guard->logout(), RedirectUsingException::class);
+        $this->assertThrows(fn() => $this->getGuard()->logout(), RedirectUsingException::class);
     }
 
-    /**
-     * @throws Random\RandomException
-     */
     #[Test] public function logout_throw_authentication_on_flow_error(): void
     {
         $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(status: 401));
+        $this->assertThrows(fn() => $this->getGuard()->logout(), AuthenticationException::class);
+    }
 
-        $guard = $this->getGuard();
-
-        $this->assertThrows(fn() => $guard->logout(), AuthenticationException::class);
-
+    #[Test] public function logout_report_exception(): void
+    {
         $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(status: 500));
+        $this->assertReportCalled(fn($e) => $e instanceof ApiException);
+        $this->assertThrows(fn() => $this->getGuard()->logout(), AuthenticationException::class);
+    }
 
-        $guard = $this->getGuard();
+    /**
+     * @param Closure $exceptionHandler
+     * @return KratosGuardTest
+     * @see https://gist.github.com/scrubmx/7571e9663963e33d17b7c5dcede11e75
+     */
+    protected function assertReportCalled(Closure $exceptionHandler): static
+    {
+        $this->partialMock(ExceptionHandler::class)
+            ->shouldReceive('report')
+            ->withArgs($exceptionHandler)
+            ->once();
 
-        $this->assertThrows(fn() => $guard->logout(), ApiException::class);
+        return $this;
     }
 
     /**
@@ -196,11 +237,10 @@ class KratosGuardTest extends TestCase
 
     /**
      * @return Session
-     * @throws JsonException
      */
     protected function getSession(): Session
     {
-        $originalSession = json_decode(file_get_contents(__DIR__ . '/mocks/sessions_whoami.json'), true, 512, JSON_THROW_ON_ERROR);
+        $originalSession = json_decode(file_get_contents(__DIR__ . '/mocks/sessions_whoami.json'), true);
 
         $session = new Ory\Client\Model\Session($originalSession);
         $session->setIdentity(new Ory\Client\Model\Identity($originalSession['identity']))
