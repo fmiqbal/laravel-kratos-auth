@@ -52,11 +52,11 @@ class KratosGuardTest extends TestCase
         );
 
         $guard = $this->getGuard();
-        $valid = $guard->validate();
+        $check = $guard->check();
         $user = $guard->user();
 
         $this->assertEquals($newId->toString(), $user->getAuthIdentifier());
-        $this->assertTrue($valid);
+        $this->assertTrue($check);
 
         // Check for second call; since we only have 1 Guzzle Response stack, it will throw error if FrontendApi try
         // to call again

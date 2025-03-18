@@ -37,7 +37,7 @@ return [
     | Cache
     |--------------------------------------------------------------------------
     |
-    | Make use of cache for Session get from /sessions/whoami, by default
+    | Make use of cache for HTTP get to /sessions/whoami, by default
     | it will use ttl of 5 minutes
     |
     */
