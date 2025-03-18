@@ -1,3 +1,7 @@
 .idea
 vendor
 workbench
+clover.xml
+cobertura.xml
+junit.xml
+.phpunit.result.cache

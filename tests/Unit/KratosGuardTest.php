@@ -3,10 +3,12 @@
 namespace Unit;
 
 use Exception;
+use Fmiqbal\KratosAuth\Exceptions\RedirectUsingException;
 use Fmiqbal\KratosAuth\KratosGuard;
 use GuzzleHttp;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -17,8 +19,8 @@ use Ory;
 use Ory\Client\ApiException;
 use Ory\Client\Model\Session;
 use PHPUnit\Framework\Attributes\Test;
-use Request;
 use Random;
+use Request;
 
 class KratosGuardTest extends TestCase
 {
@@ -57,7 +59,7 @@ class KratosGuardTest extends TestCase
         $this->assertEquals($newId->toString(), $user->getAuthIdentifier());
         $this->assertTrue($valid);
 
-        // Check for second call, since we only have 1 Guzzle Response stack, it will throw error if FrontendApi try
+        // Check for second call; since we only have 1 Guzzle Response stack, it will throw error if FrontendApi try
         // to call again
         try {
             $guard->user();
@@ -130,6 +132,55 @@ class KratosGuardTest extends TestCase
         $guard->user();
     }
 
+    #[Test] public function logout_success_will_forget_cache(): void
+    {
+        config()->set('kratos.cache.enabled', true);
+
+        $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(body: json_encode([])));
+
+        Cache::shouldReceive('forget')
+            ->once();
+
+        $this->assertThrows(fn() => $this->getGuard()->logout(), RedirectUsingException::class);
+    }
+
+    /**
+     * @throws JsonException
+     * @throws Random\RandomException
+     */
+    #[Test] public function logout_success(): void
+    {
+        $logoutToken = Str::random(40);
+        $this->setGuzzleResponse(
+            new GuzzleHttp\Psr7\Response(body: json_encode([
+                'logout_token' => $logoutToken,
+                'logout_url' => "https://localhost:80001/logout?return_to=$logoutToken",
+            ], JSON_THROW_ON_ERROR))
+        );
+
+        $guard = $this->getGuard();
+
+        $this->assertThrows(fn() => $guard->logout(), RedirectUsingException::class);
+    }
+
+    /**
+     * @throws Random\RandomException
+     */
+    #[Test] public function logout_throw_authentication_on_flow_error(): void
+    {
+        $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(status: 401));
+
+        $guard = $this->getGuard();
+
+        $this->assertThrows(fn() => $guard->logout(), AuthenticationException::class);
+
+        $this->setGuzzleResponse(new GuzzleHttp\Psr7\Response(status: 500));
+
+        $guard = $this->getGuard();
+
+        $this->assertThrows(fn() => $guard->logout(), ApiException::class);
+    }
+
     /**
      * @return KratosGuard
      * @throws Random\RandomException
@@ -164,12 +215,12 @@ class KratosGuardTest extends TestCase
         return $session;
     }
 
-    protected function setGuzzleResponse(GuzzleHttp\Psr7\Response $response): void
+    protected function setGuzzleResponse(GuzzleHttp\Psr7\Response ...$response): void
     {
         $this->app->bind('fmiqbal.kratos_auth.guzzle_client', function () use ($response) {
             return new GuzzleHttp\Client([
                 'handler' => HandlerStack::create(
-                    new GuzzleHttp\Handler\MockHandler([$response])
+                    new GuzzleHttp\Handler\MockHandler(Arr::wrap($response))
                 ),
             ]);
         });

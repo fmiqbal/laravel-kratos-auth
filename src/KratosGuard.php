@@ -4,6 +4,7 @@ namespace Fmiqbal\KratosAuth;
 
 use Closure;
 use Exception;
+use Fmiqbal\KratosAuth\Exceptions\RedirectUsingException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -98,7 +99,7 @@ class KratosGuard implements Guard
             Cache::forget($this->getCacheKey($cookie));
         }
 
-        throw new HttpException(302, "Redirecting...", null, ['Location' => $logoutFlow->getLogoutUrl()]);
+        throw new RedirectUsingException($logoutFlow->getLogoutUrl());
     }
 
     protected function getCacheKey(string $cookie): string
