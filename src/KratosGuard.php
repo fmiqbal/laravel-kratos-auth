@@ -15,7 +15,6 @@ use InvalidArgumentException;
 use Ory\Client\Api\FrontendApi;
 use Ory\Client\ApiException;
 use Ory\Client\Model\Session;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KratosGuard implements Guard
 {
@@ -29,7 +28,6 @@ class KratosGuard implements Guard
     }
 
     /**
-     * @throws ApiException
      * @throws AuthenticationException
      */
     public function validate(array $credentials = []): bool
@@ -38,7 +36,6 @@ class KratosGuard implements Guard
     }
 
     /**
-     * @throws ApiException
      * @throws AuthenticationException
      */
     public function user(): ?Authenticatable
@@ -47,14 +44,15 @@ class KratosGuard implements Guard
             return $this->user;
         }
 
+        $cookieName = config('kratos.session_cookie_name');
+        $cookie = $this->request->cookie($cookieName);
+
+        if (empty($cookie)) {
+            throw new AuthenticationException();
+        }
+
+        $this->user = null;
         try {
-            $cookieName = config('kratos.session_cookie_name');
-            $cookie = $this->request->cookie($cookieName);
-
-            if (empty($cookie)) {
-                throw new AuthenticationException();
-            }
-
             $session = config('kratos.cache.enabled')
                 ? $this->getCachedSession($cookieName, $cookie)
                 : $this->getSession($cookieName, $cookie);
@@ -63,10 +61,12 @@ class KratosGuard implements Guard
                 throw new AuthenticationException();
             }
 
-            throw $exception;
+            $this->report($exception);
         }
 
-        $this->user = $this->makeUser($session);
+        if (isset($session)) {
+            $this->user = $this->makeUser($session);
+        }
 
         return $this->user;
     }
@@ -92,14 +92,33 @@ class KratosGuard implements Guard
                 throw new AuthenticationException();
             }
 
-            throw $exception;
+            $this->report($exception);
+
+            throw new AuthenticationException();
         }
 
         if (config('kratos.cache.enabled')) {
-            Cache::forget($this->getCacheKey($cookie));
+            try {
+                Cache::forget($this->getCacheKey($cookie));
+            } catch (Exception $exception) {
+                $this->report($exception);
+            }
         }
 
         throw new RedirectUsingException($logoutFlow->getLogoutUrl());
+    }
+
+    /**
+     * @param Exception $exception
+     * @return void
+     */
+    protected function report(Exception $exception): void
+    {
+        if (! app()->bound('reported_auth_exception')) {
+            app()->instance('reported_auth_exception', true);
+
+            report($exception); // Report the exception without triggering another context loop
+        }
     }
 
     protected function getCacheKey(string $cookie): string
@@ -115,12 +134,23 @@ class KratosGuard implements Guard
         return $this->frontendApi->toSession(cookie: "$cookieName=$cookie");
     }
 
+    /**
+     * @throws ApiException
+     */
     protected function getCachedSession(string $cookieName, string $cookie): Session
     {
         $key = $this->getCacheKey($cookie);
         $ttl = config('kratos.cache.ttl');
 
-        return Cache::remember($key, $ttl, fn() => $this->getSession($cookieName, $cookie));
+        try {
+            $session = Cache::remember($key, $ttl, fn() => $this->getSession($cookieName, $cookie));
+        } catch (Exception $exception) {
+            $this->report($exception);
+
+            $session = $this->getSession($cookieName, $cookie);
+        }
+
+        return $session;
     }
 
     protected function makeUser(Session $session): ?Authenticatable
