@@ -12,9 +12,9 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
-use Ory\Client\Api\FrontendApi;
-use Ory\Client\ApiException;
-use Ory\Client\Model\Session;
+use Ory\Kratos\Client\Api\FrontendApi;
+use Ory\Kratos\Client\ApiException;
+use Ory\Kratos\Client\Model\Session;
 
 class KratosGuard implements Guard
 {

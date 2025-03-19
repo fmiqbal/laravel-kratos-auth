@@ -58,11 +58,11 @@ class ServiceProvider extends LaravelServiceProvider
         });
 
         $this->app->bind('fmiqbal.kratos_auth.frontendapi', function (Application $app) {
-            $config = (new Ory\Client\Configuration())
+            $config = (new Ory\Kratos\Client\Configuration())
                 ->setHost(config('kratos.url'))
                 ->setDebug(config('kratos.debug'));
 
-            return new Ory\Client\Api\FrontendApi(
+            return new Ory\Kratos\Client\Api\FrontendApi(
                 $app->make('fmiqbal.kratos_auth.guzzle_client'),
                 $config
             );

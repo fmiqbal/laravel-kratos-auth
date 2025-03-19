@@ -4,6 +4,8 @@ This package is to add Guard for [Ory Kratos](https://github.com/ory/kratos).
 The guard will call Ory Kratos `/sessions/whoami` endpoint
 and built an ephemeral user based on that.
 
+> This package is only meant to be used for **self-hosted Ory Kratos**
+
 ## Installation
 
 ```bash
@@ -68,7 +70,7 @@ However, **you should customize this function** to fit your needs.
 #### Example 1: Creating Users in the Database
 
 ```php
-    'user_scaffold' => static function (\Ory\Client\Model\Session $session) {
+    'user_scaffold' => static function (\Ory\Kratos\Client\Model\Session $session) {
         return \App\Models\User::unguarded(
             static fn() => \App\Models\User::firstOrCreate([
                 'guid' => $session->getIdentity()?->getId(),
@@ -88,7 +90,7 @@ However, **you should customize this function** to fit your needs.
 To avoid database hits on every request, you can cache user data:
 
 ```php
-'user_scaffold' => static function (\Ory\Client\Model\Session $session) {
+'user_scaffold' => static function (\Ory\Kratos\Client\Model\Session $session) {
     $id = $session->getIdentity()->getId();
 
     return Cache::remember("user:$id", 300, function () use ($id) {
@@ -104,7 +106,7 @@ If you want to reject users who are not found in your system, return null:
 
 ```php
 
-'user_scaffold' => static function (\Ory\Client\Model\Session $session) {
+'user_scaffold' => static function (\Ory\Kratos\Client\Model\Session $session) {
     return \App\Models\User::find($session->getIdentity()?->getId());
 },
 ```

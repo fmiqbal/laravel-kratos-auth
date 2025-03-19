@@ -65,7 +65,7 @@ return [
     | Map Ory Sessions (/sessions/whoami) into Authenticatable
     |
     */
-    'user_scaffold' => static function (\Ory\Client\Model\Session $session) {
+    'user_scaffold' => static function (\Ory\Kratos\Client\Model\Session $session) {
         return new \Illuminate\Auth\GenericUser([
             'id' => $session->getIdentity()?->getId(),
             // 'name' => $session->getIdentity()?->getTraits()->name

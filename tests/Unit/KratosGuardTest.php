@@ -18,8 +18,8 @@ use InvalidArgumentException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase;
 use Ory;
-use Ory\Client\ApiException;
-use Ory\Client\Model\Session;
+use Ory\Kratos\Client\ApiException;
+use Ory\Kratos\Client\Model\Session;
 use PHPUnit\Framework\Attributes\Test;
 use Random;
 use Request;
@@ -242,9 +242,9 @@ class KratosGuardTest extends TestCase
     {
         $originalSession = json_decode(file_get_contents(__DIR__ . '/mocks/sessions_whoami.json'), true);
 
-        $session = new Ory\Client\Model\Session($originalSession);
-        $session->setIdentity(new Ory\Client\Model\Identity($originalSession['identity']))
-            ->setAuthenticationMethods(array_map(static fn($method) => new Ory\Client\Model\SessionAuthenticationMethod($method), $originalSession['authentication_methods']))
+        $session = new Ory\Kratos\Client\Model\Session($originalSession);
+        $session->setIdentity(new Ory\Kratos\Client\Model\Identity($originalSession['identity']))
+            ->setAuthenticationMethods(array_map(static fn($method) => new Ory\Kratos\Client\Model\SessionAuthenticationMethod($method), $originalSession['authentication_methods']))
             ->setDevices($originalSession['devices']);
 
         $session->getIdentity()

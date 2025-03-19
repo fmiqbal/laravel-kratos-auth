@@ -32,7 +32,7 @@ class ServiceProviderTest extends TestCase
 
         $frontendApi = app('fmiqbal.kratos_auth.frontendapi');
 
-        $this->assertInstanceOf(Ory\Client\Api\FrontendApi::class, $frontendApi);
+        $this->assertInstanceOf(Ory\Kratos\Client\Api\FrontendApi::class, $frontendApi);
         $this->assertEquals("https://kratos", $frontendApi->getConfig()->getHost());
         $this->assertTrue($frontendApi->getConfig()->getDebug());
     }
