@@ -24,7 +24,7 @@ test:
     XDEBUG_MODE: coverage
     COMPOSER_ALLOW_SUPERUSER: 1
   image:
-    name: harbor.unpad.dev/images/php:8.3-dev
+    name: $HARBOR_HOST/images/php:8.3-dev
     entrypoint: [""]
   coverage: '/^\s*Total:\s*\d+\.\d+\s*%/'
   artifacts:
@@ -45,10 +45,11 @@ test:
 
 sonarqube:
   stage: test
-  image: docker.harbor.unpad.dev/sonarsource/sonar-scanner-cli:11
+  image:  $HARBOR_HOST/docker/sonarsource/sonar-scanner-cli:11
   variables:
     GIT_DEPTH: 0
     GIT_STRATEGY: clone
+    PROJECT_KEY: $CI_PROJECT_ID-$CI_PROJECT_NAME
   needs:
     - "test"
   script:
@@ -66,12 +67,12 @@ sonarqube:
       when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       variables:
-        PROJECT_KEY: $CI_PROJECT_ID-$CI_PROJECT_NAME
         SONAR_PROPERTIES: |-
           sonar.pullrequest.key=$CI_MERGE_REQUEST_IID
           sonar.pullrequest.branch=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
           sonar.pullrequest.base=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
       variables:
-        PROJECT_KEY: $CI_PROJECT_ID-$CI_PROJECT_NAME
-
+        SONAR_PROPERTIES: |-
+          sonar.projectVersion=$CI_COMMIT_TAG
